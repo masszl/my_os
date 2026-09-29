@@ -1,8 +1,10 @@
 from db import get_connection
 
 
-def log_syscall(name, arguments, username, status):
-    """Записывает системный вызов в журнал."""
+current_user = "guest"
+
+
+def log_syscall(name, arguments="", username="guest", status="success"):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -12,28 +14,92 @@ def log_syscall(name, arguments, username, status):
         (syscall_name, arguments, username, status)
         VALUES (?, ?, ?, ?)
         """,
-        (name, arguments, username, status)
+        (name, str(arguments), username, status)
     )
 
     conn.commit()
     conn.close()
 
 
-def sys_echo(message, username="user"):
-    """Возвращает переданное сообщение."""
-    log_syscall("sys_echo", message, username, "success")
-    return message
+def sys_login(login, password):
+    global current_user
+
+    if login == "admin" and password == "admin":
+        current_user = "admin"
+        log_syscall("sys_login", login, current_user)
+        return True
+
+    log_syscall("sys_login", login, current_user, "failed")
+    return False
 
 
-def sys_get_users(username="user"):
-    """Возвращает список пользователей."""
-    conn = get_connection()
-    cursor = conn.cursor()
+def sys_logout():
+    global current_user
 
-    cursor.execute("SELECT id, login, role FROM users")
-    users = cursor.fetchall()
+    log_syscall("sys_logout", "", current_user)
+    current_user = "guest"
+    return True
 
-    conn.close()
 
-    log_syscall("sys_get_users", "", username, "success")
-    return users
+def sys_whoami():
+    log_syscall("sys_whoami", "", current_user)
+    return current_user
+
+
+def sys_create_file(path, content):
+    log_syscall("sys_create_file", path, current_user)
+    return 1
+
+
+def sys_read_file(path):
+    log_syscall("sys_read_file", path, current_user)
+    return ""
+
+
+def sys_delete_file(path):
+    log_syscall("sys_delete_file", path, current_user)
+    return True
+
+
+def sys_list_files(path="/"):
+    log_syscall("sys_list_files", path, current_user)
+    return []
+
+
+def sys_exec(name):
+    log_syscall("sys_exec", name, current_user)
+    return 42
+
+
+def sys_ps():
+    log_syscall("sys_ps", "", current_user)
+    return []
+
+
+def sys_kill(pid):
+    log_syscall("sys_kill", pid, current_user)
+    return True
+
+
+def sys_mem_alloc(size):
+    log_syscall("sys_mem_alloc", size, current_user)
+    return size
+
+
+def sys_logs(limit):
+    log_syscall("sys_logs", limit, current_user)
+    return []
+
+
+def sys_shutdown():
+    log_syscall("sys_shutdown", "", current_user)
+    return True
+
+
+if __name__ == "__main__":
+    print("Проверка системных вызовов")
+
+    print("login:", sys_login("admin", "admin"))
+    print("whoami:", sys_whoami())
+    print("create:", sys_create_file("/test.txt", "Hello"))
+    print("ps:", sys_ps())
