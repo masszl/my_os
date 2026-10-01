@@ -1,4 +1,6 @@
-from src.db import get_connection
+from db import get_connection
+from auth import authenticate, check_permission
+from kernel import kernel_instance
 
 current_user = "guest"
 
@@ -22,16 +24,17 @@ def log_syscall(name, arguments="", username="guest", status="success"):
 
     
 
+def sys_login(login, password, current_user="guest"):
+    log_syscall("sys_login", login, current_user, "check")
 
-def sys_login(login, password):
-    global current_user
+    user = authenticate(login, password)
 
-    if login == "admin" and password == "admin":
-        current_user = "admin"
-        log_syscall("sys_login", login, current_user)
+    if user:
+        kernel_instance.set_user(user["login"])
+        log_syscall("sys_login", login, user["login"], "OK")
         return True
 
-    log_syscall("sys_login", login, current_user, "failed")
+    log_syscall("sys_login", login, current_user, "DENIED")
     return False
 
 
@@ -44,8 +47,9 @@ def sys_logout():
 
 
 def sys_whoami():
-    log_syscall("sys_whoami", "", current_user)
-    return current_user
+    user = kernel_instance.get_user()
+    log_syscall("sys_whoami", "", user, "OK")
+    return user
 
 
 def sys_create_file(path, content):
@@ -58,7 +62,10 @@ def sys_read_file(path):
     return ""
 
 
-def sys_delete_file(path, current_user="guest", owner=None):
+def sys_delete_file(path, current_user=None, owner=None):
+    if current_user is None:
+        current_user = kernel_instance.get_user()
+
     log_syscall("sys_delete_file", path, current_user, "check")
 
     if not check_permission(current_user, "delete_file", owner):
@@ -83,8 +90,10 @@ def sys_ps():
     log_syscall("sys_ps", "", current_user)
     return []
 
+def sys_kill(pid, current_user=None):
+    if current_user is None:
+        current_user = kernel_instance.get_user()
 
-def sys_kill(pid, current_user="guest"):
     log_syscall("sys_kill", str(pid), current_user, "check")
 
     if not check_permission(current_user, "kill"):
@@ -93,7 +102,6 @@ def sys_kill(pid, current_user="guest"):
 
     log_syscall("sys_kill", str(pid), current_user, "OK")
     return True
-
 
 def sys_mem_alloc(size):
     log_syscall("sys_mem_alloc", size, current_user)
@@ -111,7 +119,9 @@ def sys_shutdown():
 
 
 if __name__ == "__main__":
-    print("Проверка системных вызовов")
+    login = input("Логин: ")
+    password = input("Пароль: ")
+    print(sys_login(login, password, "guest"))
 
     print("login:", sys_login("admin", "admin"))
     print("whoami:", sys_whoami())
