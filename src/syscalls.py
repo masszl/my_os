@@ -1,5 +1,4 @@
-from db import get_connection
-
+from src.db import get_connection
 
 current_user = "guest"
 
@@ -17,8 +16,11 @@ def log_syscall(name, arguments="", username="guest", status="success"):
         (name, str(arguments), username, status)
     )
 
+
     conn.commit()
     conn.close()
+
+    
 
 
 def sys_login(login, password):
@@ -56,8 +58,14 @@ def sys_read_file(path):
     return ""
 
 
-def sys_delete_file(path):
-    log_syscall("sys_delete_file", path, current_user)
+def sys_delete_file(path, current_user="guest", owner=None):
+    log_syscall("sys_delete_file", path, current_user, "check")
+
+    if not check_permission(current_user, "delete_file", owner):
+        log_syscall("sys_delete_file", path, current_user, "DENIED")
+        return False
+
+    log_syscall("sys_delete_file", path, current_user, "OK")
     return True
 
 
@@ -76,8 +84,14 @@ def sys_ps():
     return []
 
 
-def sys_kill(pid):
-    log_syscall("sys_kill", pid, current_user)
+def sys_kill(pid, current_user="guest"):
+    log_syscall("sys_kill", str(pid), current_user, "check")
+
+    if not check_permission(current_user, "kill"):
+        log_syscall("sys_kill", str(pid), current_user, "DENIED")
+        return False
+
+    log_syscall("sys_kill", str(pid), current_user, "OK")
     return True
 
 
@@ -103,3 +117,19 @@ if __name__ == "__main__":
     print("whoami:", sys_whoami())
     print("create:", sys_create_file("/test.txt", "Hello"))
     print("ps:", sys_ps())
+
+
+def check_permission(current_user, action, target_owner=None):
+    if current_user == "guest" and action != "whoami":
+        return False
+
+    if current_user == "admin":
+        return True
+
+    if action == "delete_file" and target_owner and target_owner != current_user:
+        return False
+
+    if action == "kill" and current_user != "admin":
+        return False
+
+    return True
