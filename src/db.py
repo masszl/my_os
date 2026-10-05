@@ -58,6 +58,15 @@ def init_db():
         )
     """)
 
+
+    cursor.execute("""
+     CREATE TABLE IF NOT EXISTS memory_state (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        used INTEGER DEFAULT 0,
+        "limit" INTEGER DEFAULT 1024
+    )
+""")
+
     conn.commit()
     conn.close()
 

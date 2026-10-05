@@ -1,5 +1,5 @@
 import hashlib
-from src.db import execute_insert, execute_select
+from db import execute_insert, execute_select
 
 
 def hash_password(password):

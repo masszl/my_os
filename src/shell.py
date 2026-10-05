@@ -5,15 +5,19 @@ from kernel import kernel_instance
 
 def show_help():
     print("\nДоступные команды:")
-    print("help    - список команд")
-    print("whoami  - текущий пользователь")
-    print("login   - войти в систему")
-    print("mem     - информация о памяти")
-    print("delete  - удалить файл")
-    print("create  - создать файл")
-    print("ls      - список файлов")
-    print("ps      - список процессов")
-    print("exit    - выйти из StudyOS")
+    print("help       - список команд")
+    print("whoami     - текущий пользователь")
+    print("login      - войти в систему")
+    print("logout     - выйти из аккаунта")
+    print("create     - создать файл")
+    print("cat PATH   - прочитать файл")
+    print("ls         - список файлов")
+    print("run NAME   - запустить процесс")
+    print("ps         - список процессов")
+    print("kill PID   - завершить процесс")
+    print("mem        - информация о памяти")
+    print("logs       - журнал системных вызовов")
+    print("exit       - выйти из StudyOS")
 
 
 def main():
@@ -28,13 +32,20 @@ def main():
         current_user = kernel_instance.get_user()
         command = input(f"{current_user}@studyos:~$ ").strip()
 
-        if command == "help":
+        if not command:
+            continue
+
+        parts = command.split(maxsplit=1)
+        cmd = parts[0]
+        arg = parts[1] if len(parts) > 1 else ""
+
+        if cmd == "help":
             show_help()
 
-        elif command == "whoami":
+        elif cmd == "whoami":
             print(syscalls.sys_whoami())
 
-        elif command == "login":
+        elif cmd == "login":
             login = input("Логин: ")
             password = input("Пароль: ")
 
@@ -43,50 +54,101 @@ def main():
             else:
                 print("Неверный логин или пароль")
 
-        elif command == "mem":
-            info = kernel_instance.memory_info()
-            print(f"Использовано: {info['used']} / {info['limit']} МБ")
-            print(f"Свободно: {info['free']} МБ")
+        elif cmd == "logout":
+            syscalls.sys_logout()
+            print("Вы вышли из системы")
 
-        elif command == "delete":
-            path = input("Путь к файлу: ")
-            owner = input("Владелец файла: ")
-
-            if syscalls.sys_delete_file(path, current_user, owner):
-                print("Файл удалён")
-            else:
-                print("Нет прав на удаление")
-
-        elif command == "create":
-            path = input("Путь к файлу: ")
+        elif cmd == "create":
+            path = input("Путь: ")
             content = input("Содержимое: ")
-            file_id = syscalls.sys_create_file(path, content)
-            print("Файл создан. ID:", file_id)
 
-        elif command == "ls":
-            files = syscalls.sys_list_files("/")
+            file_id = syscalls.sys_create_file(
+                path,
+                content,
+                current_user
+            )
 
-            if files:
+            if file_id == -1:
+                print("Файл с таким путём уже существует")
+            else:
+                print(f"Создан файл с id={file_id}")
+
+        elif cmd == "cat":
+            if not arg:
+                print("Укажите путь к файлу")
+            else:
+                content = syscalls.sys_read_file(arg, current_user)
+
+                if content:
+                    print(content)
+                else:
+                    print("(файл пуст или не существует)")
+
+        elif cmd == "ls":
+            files = syscalls.sys_list_files(
+                arg or "/",
+                current_user
+            )
+
+            if not files:
+                print("(нет файлов)")
+            else:
                 for file in files:
                     print(file)
+
+        elif cmd == "run":
+            if not arg:
+                print("Укажите имя программы")
             else:
-                print("Файлов пока нет")
+                pid = syscalls.sys_exec(arg, current_user)
 
-        elif command == "ps":
-            processes = syscalls.sys_ps()
+                if pid == -1:
+                    print("Не удалось запустить: нет свободной памяти")
+                else:
+                    print(f"Запущен процесс с PID={pid}")
 
-            if processes:
+        elif cmd == "ps":
+            processes = syscalls.sys_ps(current_user)
+
+            if not processes:
+                print("(нет процессов)")
+            else:
                 for process in processes:
                     print(process)
-            else:
-                print("Процессов пока нет")
 
-        elif command == "exit":
-            print("Завершение работы StudyOS")
+        elif cmd == "kill":
+            if not arg:
+                print("Укажите PID процесса")
+            else:
+                try:
+                    pid = int(arg)
+                except ValueError:
+                    print("PID должен быть числом")
+                    continue
+
+                if syscalls.sys_kill(pid, current_user):
+                    print(f"Процесс {pid} завершён")
+                else:
+                    print(f"Не удалось завершить процесс {pid}")
+
+        elif cmd == "mem":
+            info = kernel_instance.memory_info()
+            print("Использовано:", info["used"])
+            print("Всего:", info["limit"])
+            print("Свободно:", info["free"])
+
+        elif cmd == "logs":
+            logs = syscalls.sys_logs(10)
+
+            for log in logs:
+                print(log)
+
+        elif cmd == "exit":
+            print("Завершение StudyOS")
             break
 
         else:
-            print("Неизвестная команда. Введите help.")
+            print("Неизвестная команда")
 
 
 if __name__ == "__main__":
