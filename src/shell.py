@@ -5,19 +5,21 @@ from kernel import kernel_instance
 
 def show_help():
     print("\nДоступные команды:")
-    print("help       - список команд")
-    print("whoami     - текущий пользователь")
-    print("login      - войти в систему")
-    print("logout     - выйти из аккаунта")
-    print("create     - создать файл")
-    print("cat PATH   - прочитать файл")
-    print("ls         - список файлов")
-    print("run NAME   - запустить процесс")
-    print("ps         - список процессов")
-    print("kill PID   - завершить процесс")
-    print("mem        - информация о памяти")
-    print("logs       - журнал системных вызовов")
-    print("exit       - выйти из StudyOS")
+    print("help        - список команд")
+    print("echo TEXT   - вывести текст")
+    print("whoami      - текущий пользователь")
+    print("login       - войти в систему")
+    print("logout      - выйти из аккаунта")
+    print("create      - создать файл")
+    print("cat PATH    - прочитать файл")
+    print("ls          - список файлов")
+    print("delete PATH - удалить файл")
+    print("run NAME    - запустить процесс")
+    print("ps          - список процессов")
+    print("kill PID    - завершить процесс")
+    print("mem         - информация о памяти")
+    print("logs        - журнал системных вызовов")
+    print("exit        - выйти из StudyOS")
 
 
 def main():
@@ -42,6 +44,9 @@ def main():
         if cmd == "help":
             show_help()
 
+        elif cmd == "echo":
+            print(arg)
+
         elif cmd == "whoami":
             print(syscalls.sys_whoami())
 
@@ -52,7 +57,7 @@ def main():
             if syscalls.sys_login(login, password, current_user):
                 print("Вы вошли как", login)
             else:
-                print("Неверный логин или пароль")
+                print("Ошибка входа")
 
         elif cmd == "logout":
             syscalls.sys_logout()
@@ -95,6 +100,15 @@ def main():
             else:
                 for file in files:
                     print(file)
+
+        elif cmd == "delete":
+            if not arg:
+                print("Укажите путь к файлу")
+            else:
+                if syscalls.sys_delete_file(arg, current_user):
+                    print("Файл удалён")
+                else:
+                    print("Нет прав на удаление или файл не существует")
 
         elif cmd == "run":
             if not arg:
@@ -140,8 +154,11 @@ def main():
         elif cmd == "logs":
             logs = syscalls.sys_logs(10)
 
-            for log in logs:
-                print(log)
+            if not logs:
+                print("(журнал пуст)")
+            else:
+                for log in logs:
+                    print(log)
 
         elif cmd == "exit":
             print("Завершение StudyOS")
