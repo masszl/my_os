@@ -92,6 +92,20 @@ def test_memory_info():
     print("[PASS] информация о памяти")
 
 
+def test_save_memory_state():
+    from src import db
+
+    k = new_kernel()
+    k.allocate_memory(100)
+    k.save_memory_state()
+
+    states = db.execute_select("memory_state")
+
+    assert len(states) >= 1
+    assert states[0]["used"] == 100
+    print("[PASS] состояние памяти сохранено в БД")
+
+
 if __name__ == "__main__":
     test_default_user()
     test_set_user()
@@ -101,5 +115,6 @@ if __name__ == "__main__":
     test_free_memory()
     test_memory_not_negative()
     test_memory_info()
+    test_save_memory_state()
 
     print("\nВсе тесты kernel.py пройдены")
