@@ -1,3 +1,4 @@
+
 import hashlib
 from db import execute_insert, execute_select
 
@@ -12,14 +13,11 @@ def register_user(login, password, role="user"):
     if existing:
         return None
 
-    return execute_insert(
-        "users",
-        {
-            "login": login,
-            "password_hash": hash_password(password),
-            "role": role
-        }
-    )
+    return execute_insert("users", {
+        "login": login,
+        "password_hash": hash_password(password),
+        "role": role
+    })
 
 
 def authenticate(login, password):
@@ -47,14 +45,12 @@ def check_permission(current_user, action, target_owner=None):
     if role == "admin":
         return True
 
-    if action in ("delete_file", "kill"):
-        if target_owner and target_owner != current_user:
+    if action == "kill":
+        return False
+
+    if action == "delete_file":
+        if target_owner is None:
             return False
+        return target_owner == current_user
 
     return True
-
-if __name__ == "__main__":
-    print(authenticate("unknown", "1234"))
-    print(register_user("admin", "secret", "admin"))
-    print(register_user("empty_user", ""))
-    print(authenticate("empty_user", ""))
