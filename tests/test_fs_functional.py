@@ -1,7 +1,8 @@
+
 import sys
 from pathlib import Path
 
-root = Path(__file__).resolve().parents[2]
+root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(root))
 sys.path.insert(0, str(root / "src"))
 
@@ -110,6 +111,6 @@ if __name__ == "__main__":
         test_get_owner_missing()
         test_get_file_info()
 
-        print("\nВсе функциональные тесты fs.py пройдены")
+        print("\nВсе 10 функциональных тестов fs.py пройдены")
     finally:
         cleanup()
