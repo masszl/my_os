@@ -47,7 +47,7 @@ for filename in test_files:
     failed = len(re.findall(r"^\[FAIL\]", output, re.MULTILINE))
 
     if result.returncode != 0:
-        failed += 1
+        failed += 1 
         files_failed += 1
         status = "FAIL"
     elif passed == 0:
